@@ -11,7 +11,7 @@ import { faSort } from "@fortawesome/free-solid-svg-icons";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { faCalendar } from "@fortawesome/free-solid-svg-icons";
 import { faClock } from "@fortawesome/free-solid-svg-icons";
-import { faHourglassStart } from "@fortawesome/free-solid-svg-icons";
+import { faHourglass } from "@fortawesome/free-solid-svg-icons";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 
@@ -26,6 +26,7 @@ import { getWeek, getMonth, filterByDateOrRange, resetTimeOnDate, dateExistsInSe
 import { Dropdown } from "antd";
 
 import { TableDatePicker } from "./TableDatePicker";
+import { StatusPicker } from "./StatusPicker";
 
 import data from "../data"; //temporal mientras se conecta la db
 import { useState, useEffect } from "react";
@@ -46,11 +47,6 @@ export default function Table() {
     const fetchData = async () => {
       try {
         //fetch todas las citas de la base de datos
-        // si no hay error pasar a una variable let llamada data
-
-        // const response = await fetch(data);
-        // if (!response.ok) throw new Error("Error de fetch");
-        // data = await response.json();
 
         setAppointments(filterByDateOrRange(data, selectedDateOrRange[0]));
 
@@ -113,42 +109,54 @@ export default function Table() {
     }
   }
 
-  function handlePickerChange() {
-    // if (picker === "date") {
-    //   setSelectedDateOrRange([selectedDateOrRange[0]]);
-    // } else if (picker === "week") {
-    //   const { start, end } = getWeek(selectedDateOrRange[0]);
-    //   setSelectedDateOrRange([start, end]);
-    // } else if (picker === "month") {
-    //   const { start, end } = getMonth(selectedDateOrRange[0]);
-    //   setSelectedDateOrRange([start, end]);
-    // }
-
-    setSelectedDateOrRange([new Date("January 01, 2020"), resetTimeOnDate(new Date())]);
+  function handlePickerChange(picker) {
+    if (picker === "date") {
+      setSelectedDateOrRange([selectedDateOrRange[0]]);
+    } else if (picker === "week") {
+      const { start, end } = getWeek(selectedDateOrRange[0]);
+      setSelectedDateOrRange([start, end]);
+    } else if (picker === "month") {
+      const { start, end } = getMonth(selectedDateOrRange[0]);
+      setSelectedDateOrRange([start, end]);
+    } else if (picker === "todas") {
+      setSelectedDateOrRange([new Date("January 01, 2023"), resetTimeOnDate(new Date())]);
+    }
   }
 
   function selectPreviousDay() {
-    //actualizar dropdown calendar si cambio el mes por las flechas
     if (selectedDateOrRange.length === 1) {
       setSelectedDateOrRange(prev => [new Date(prev[0].getTime() - 86400000)]);
-    }
-  }
-  function selectNextDay() {
-    if (selectedDateOrRange.length === 1) {
-      setSelectedDateOrRange(prev => [new Date(prev[0].getTime() + 86400000)]);
+    } else if (selectedDateOrRange.length === 2) {
+      if (selectedDateOrRange[1].getTime() - selectedDateOrRange[0].getTime() <= 604800000) {
+        const { start, end } = getWeek(new Date(selectedDateOrRange[0].getTime() - 604800000)); //get previous week range
+        setSelectedDateOrRange([start, end]);
+      } else {
+        let previousMonth = selectedDateOrRange[0];
+        previousMonth.setDate(1);
+        previousMonth.setMonth(previousMonth.getMonth() - 1);
+
+        const { start, end } = getMonth(previousMonth); //get previous month range
+        setSelectedDateOrRange([start, end]);
+      }
     }
   }
 
-  function handleSearchChange(e) {
-    setSearch(e.target.value);
-    //solo ordenar las citas para que las citas correspondientes a la busqueda salgan hasta arriba
-    const searchedAppointments = appointments.filter(item => item.nombre.startsWith(e.target.value));
-    console.log("Searched");
-    console.log(searchedAppointments);
-    setAppointments(prev => {
-      const filtered = prev.filter(item => !searchedAppointments.includes(item));
-      return [...searchedAppointments, ...filtered];
-    });
+  function selectNextDay() {
+    if (selectedDateOrRange.length === 1) {
+      setSelectedDateOrRange(prev => [new Date(prev[0].getTime() + 86400000)]);
+    } else if (selectedDateOrRange.length === 2) {
+      if (selectedDateOrRange[1].getTime() - selectedDateOrRange[0].getTime() <= 604800000) {
+        const { start, end } = getWeek(new Date(selectedDateOrRange[0].getTime() + 604800000)); //get next week range
+        setSelectedDateOrRange([start, end]);
+      } else {
+        let previousMonth = selectedDateOrRange[0];
+        previousMonth.setDate(1);
+        previousMonth.setMonth(previousMonth.getMonth() + 1);
+
+        const { start, end } = getMonth(previousMonth); //get next month range
+        setSelectedDateOrRange([start, end]);
+      }
+    }
   }
 
   return (
@@ -158,18 +166,25 @@ export default function Table() {
           <button className="btn">
             <FontAwesomeIcon className="icon-primary" icon={faMagnifyingGlass} />
           </button>
-          <input value={search} className="input-accent" type="text" placeholder="Search" onChange={e => handleSearchChange(e)} />
+          <input value={search} className="input-accent" type="text" placeholder="Buscar" onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="flex small-gap">
           <button className="btn" onClick={selectPreviousDay}>
             <FontAwesomeIcon className="icon-primary" icon={faChevronLeft} />
           </button>
           <Dropdown
+            overlayClassName="date-dropdown"
             trigger={["click"]}
             placement="bottom"
-            dropdownRender={() => <TableDatePicker handleDateChange={handleDateChange} handlePickerChange={handlePickerChange} />}
+            dropdownRender={() => (
+              <TableDatePicker
+                handleDateChange={handleDateChange}
+                handlePickerChange={handlePickerChange}
+                selectedDate={selectedDateOrRange}
+              />
+            )}
           >
-            <div className="btn" style={{ width: "16rem", justifyContent: "space-between" }}>
+            <div className="btn" style={{ width: "16.5rem", justifyContent: "space-between" }}>
               <p className="accent-font">
                 {dayjs(selectedDateOrRange[0]).format("DD-MM-YYYY")}
                 {selectedDateOrRange.length === 2 && ` | ${dayjs(selectedDateOrRange[1]).format("DD-MM-YYYY")}`}
@@ -206,48 +221,57 @@ export default function Table() {
           </div>
         </div>
 
-        {appointments.map((e, i) => {
-          return (
-            <div key={i} className="table-item table-row">
-              <div>
-                <button className="btn btn-small">
-                  <FontAwesomeIcon className="icon-secundary" icon={faSquare} />
-                </button>
+        {appointments
+          .filter(
+            e =>
+              e.nombre.toLowerCase().includes(search) ||
+              e.telefono.includes(search) ||
+              e.servicio.toLowerCase().includes(search) ||
+              e.estado.toLowerCase().includes(search) ||
+              e.fecha.toLowerCase().includes(search) ||
+              e.hora.toLowerCase().includes(search)
+          )
+          .map(e => {
+            return (
+              <div key={e.id} className="table-item table-row">
+                <div>
+                  <button className="btn btn-small">
+                    <FontAwesomeIcon className="icon-secundary" icon={faSquare} />
+                  </button>
+                </div>
+                <p className="small-font">{e.fecha}</p>
+                <p className="small-font">{e.hora}</p>
+                <p className="small-font">{e.nombre}</p>
+                <p className="small-font">{e.servicio}</p>
+                <p className="small-font">{e.telefono}</p>
+                <Dropdown
+                  className="btn btn-small btn-fixed-width"
+                  trigger={["click"]}
+                  placement="bottom"
+                  dropdownRender={() => <StatusPicker statusPicked={e.estado} />}
+                >
+                  <div>
+                    <FontAwesomeIcon
+                      icon={
+                        (e.estado === "Citado" && faCalendar) ||
+                        (e.estado === "Pendiente" && faClock) ||
+                        (e.estado === "En curso" && faHourglass) ||
+                        (e.estado === "Completado" && faCheck) ||
+                        (e.estado === "Cancelado" && faXmark)
+                      }
+                      className="icon-secundary"
+                    />
+                    <p className="small-font">{e.estado}</p>
+                  </div>
+                </Dropdown>
+                <div>
+                  <button className="btn btn-small">
+                    <FontAwesomeIcon className="icon-secundary" icon={faTrash} />
+                  </button>
+                </div>
               </div>
-              <p className="small-font">{e.fecha}</p>
-              <p className="small-font">{e.hora}</p>
-              <p className="small-font">{e.nombre}</p>
-              <p className="small-font">{e.servicio}</p>
-              <p className="small-font">{e.telefono}</p>
-              <button
-                style={{
-                  backgroundColor:
-                    (e.estado === "Citado" && "#96E190") ||
-                    (e.estado === "Pendiente" && "#DBDE48") ||
-                    (e.estado === "Completado" && "#c2c2c2"),
-                }}
-                className="btn btn-small btn-fixed-width"
-              >
-                <FontAwesomeIcon
-                  className="icon-secundary"
-                  icon={
-                    (e.estado === "Citado" && faCalendar) ||
-                    (e.estado === "Pendiente" && faClock) ||
-                    (e.estado === "En curso" && faHourglassStart) ||
-                    (e.estado === "Completado" && faCheck) ||
-                    (e.estado === "Cancelado" && faXmark)
-                  }
-                />
-                <p className="small-font">{e.estado}</p>
-              </button>
-              <div>
-                <button className="btn btn-small">
-                  <FontAwesomeIcon className="icon-secundary" icon={faTrash} />
-                </button>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
 
         <div className="table-footer flex align-bottom">
           <p className="small-font">Citas mostradas: {appointments.length}</p>

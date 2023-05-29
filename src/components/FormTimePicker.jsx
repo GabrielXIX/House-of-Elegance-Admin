@@ -11,6 +11,8 @@ export function FormTimePicker({ control, name }) {
       render={({ field, fieldState }) => {
         return (
           <TimePicker
+            className="form-picker"
+            popupClassName="form-picker-popup"
             use12Hours
             format="h:mm a"
             status={fieldState.error ? "error" : undefined}

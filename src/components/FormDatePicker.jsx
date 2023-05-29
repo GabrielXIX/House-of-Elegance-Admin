@@ -11,6 +11,8 @@ export function FormDatePicker({ control, name }) {
       render={({ field, fieldState }) => {
         return (
           <DatePicker
+            className="form-picker"
+            popupClassName="form-picker-popup"
             format={"DD-MM-YYYY"}
             status={fieldState.error ? "error" : undefined}
             ref={field.ref}

@@ -211,3 +211,74 @@ h4 {
   border-radius: 8px;
   padding: 2rem;
 }
+
+/*Ant Design*/
+/*Select*/
+
+.ad-select {
+  background-color: #fffcf5;
+}
+
+/*Dropdown*/
+
+.date-dropdown {
+  background-color: #fffcf5;
+  padding: 0.5rem;
+  border-radius: 8px;
+  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25);
+  /* width: 22.5rem; */
+  width: 16.5rem;
+  text-align: center;
+}
+
+.status-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background-color: #fffcf5;
+  padding: 0.5rem;
+  border-radius: 8px;
+  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25);
+}
+
+/*Pickers*/
+
+.table-picker {
+  background-color: #fffcf5;
+  border: 1px solid #37493d51;
+}
+
+.table-picker-popup > div > div {
+  background-color: #fffcf5;
+}
+
+.form-picker {
+  background-color: #eae4d5;
+  border: none;
+}
+
+.form-picker-popup > div > div {
+  background-color: #fffcf5;
+}
+
+/*Estado*/
+
+.citado {
+  background-color: rgb(61, 204, 61);
+}
+
+.pendiente {
+  background-color: rgb(202, 204, 61);
+}
+
+.encurso {
+  background-color: rgb(107, 102, 201);
+}
+
+.completado {
+  background-color: rgb(208, 208, 208);
+}
+
+.cancelado {
+  background-color: rgb(206, 106, 106);
+}
