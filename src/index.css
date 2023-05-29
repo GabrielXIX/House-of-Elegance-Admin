@@ -166,11 +166,12 @@ h4 {
   position: relative;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25);
   margin: 1rem 0;
+  min-width: 58rem;
 }
 
 .table-item {
   display: grid;
-  grid-template-columns: 2.25rem repeat(6, 4fr) 2.25rem;
+  grid-template-columns: repeat(6, 4fr) repeat(2, 2.25rem);
   padding: 0.5rem;
   align-items: center;
   justify-items: center;

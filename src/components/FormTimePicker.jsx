@@ -21,7 +21,7 @@ export function FormTimePicker({ control, name }) {
             onBlur={field.onBlur}
             value={field.value ? dayjs(field.value) : null}
             onChange={time => {
-              field.onChange(time ? time.valueOf() : null);
+              field.onChange(time ? time : null);
             }}
             placeholder="Hora"
           />

@@ -6,7 +6,6 @@ import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 
-import { faSquare } from "@fortawesome/free-solid-svg-icons";
 import { faSort } from "@fortawesome/free-solid-svg-icons";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { faCalendar } from "@fortawesome/free-solid-svg-icons";
@@ -14,6 +13,7 @@ import { faClock } from "@fortawesome/free-solid-svg-icons";
 import { faHourglass } from "@fortawesome/free-solid-svg-icons";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 
 import { useForm } from "react-hook-form";
 import { FormDatePicker } from "./FormDatePicker";
@@ -36,7 +36,8 @@ export default function Table() {
   const [modalShown, setModalShown] = useState(false);
   const [selectedDateOrRange, setSelectedDateOrRange] = useState([resetTimeOnDate(new Date())]);
   const [search, setSearch] = useState("");
-  const { register, handleSubmit, reset, control } = useForm();
+  const { register, handleSubmit, reset, control, setValue } = useForm();
+  const [modalType, setModalType] = useState("Crear");
 
   dayjs.extend(updateLocale);
   dayjs.updateLocale("en", {
@@ -64,7 +65,6 @@ export default function Table() {
 
   function addNewAppointment({ nombre, telefono, servicio, fecha, hora }) {
     if (servicio === "Servicio") servicio = "Corte de cabello";
-
     //ingresar en base de datos
 
     fecha = resetTimeOnDate(fecha.toDate());
@@ -72,6 +72,7 @@ export default function Table() {
       setAppointments(prev => [
         ...prev,
         {
+          id: data.length + 1,
           fecha: dayjs(fecha).format("DD-MM-YYYY"),
           hora: dayjs(hora).format("h:mm a"),
           nombre: nombre,
@@ -80,6 +81,41 @@ export default function Table() {
           estado: "Citado",
         },
       ]);
+    }
+
+    reset({
+      fecha: "",
+      hora: "",
+      nombre: "",
+      servicio: "Servicio",
+      telefono: "",
+    });
+
+    setModalShown(false);
+  }
+
+  function updateAppointment({ id, nombre, telefono, servicio, fecha, hora }) {
+    //base de datos
+
+    if (!(fecha instanceof Date)) fecha = fecha.toDate();
+    fecha = resetTimeOnDate(fecha);
+    if (dateExistsInSelected(fecha, [...selectedDateOrRange])) {
+      const newAppointments = appointments.map(item => {
+        if (item.id === id) {
+          return {
+            id: id,
+            fecha: dayjs(fecha).format("DD-MM-YYYY"),
+            hora: dayjs(hora).format("h:mm a"),
+            nombre: nombre,
+            servicio: servicio,
+            telefono: telefono,
+            estado: "Citado",
+          };
+        }
+        return item;
+      });
+
+      setAppointments(newAppointments);
     }
 
     reset({
@@ -159,6 +195,30 @@ export default function Table() {
     }
   }
 
+  function handleAddModalOpening() {
+    setModalType("Crear");
+    setModalShown(true);
+  }
+
+  function handleEditModalOpening({ id, nombre, telefono, servicio, hora, fecha }) {
+    setModalType("Actualizar");
+    setModalShown(true);
+
+    const auxFecha = fecha.split("-");
+    fecha = new Date(+auxFecha[2], auxFecha[1] - 1, +auxFecha[0]);
+    const convertTo24 = e => (e ? dayjs(`1/1/1 ${e}`).format("HH:mm:00") : null);
+    hora = convertTo24(hora);
+    hora = hora.split(":");
+    hora = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate(), hora[0], hora[1], hora[2]);
+
+    setValue("nombre", nombre);
+    setValue("telefono", telefono);
+    setValue("servicio", servicio);
+    setValue("fecha", fecha);
+    setValue("hora", hora);
+    setValue("id", id);
+  }
+
   return (
     <>
       <div className="flex">
@@ -196,29 +256,23 @@ export default function Table() {
             <FontAwesomeIcon className="icon-primary" icon={faChevronRight} />
           </button>
         </div>
-        <button className="btn" onClick={() => setModalShown(true)}>
+        <button className="btn" onClick={handleAddModalOpening}>
           <FontAwesomeIcon className="icon-primary" icon={faPlus} />
           <p className="accent-font">Nueva Cita</p>
         </button>
       </div>
       <div className="table flex-column">
         <div className="table-item table-head">
-          <div>
-            <button className="btn btn-small">
-              <FontAwesomeIcon className="icon-primary" icon={faSquare} />
-            </button>
-          </div>
           <h3>Fecha</h3>
           <h3>Hora</h3>
           <h3>Nombre</h3>
           <h3>Servicio</h3>
           <h3>Telefono</h3>
           <h3>Estado</h3>
-          <div>
-            <button className="btn btn-small">
-              <FontAwesomeIcon className="icon-primary" icon={faSort} />
-            </button>
-          </div>
+          <div></div>
+          <button className="btn btn-small">
+            <FontAwesomeIcon className="icon-primary" icon={faSort} />
+          </button>
         </div>
 
         {appointments
@@ -234,11 +288,6 @@ export default function Table() {
           .map(e => {
             return (
               <div key={e.id} className="table-item table-row">
-                <div>
-                  <button className="btn btn-small">
-                    <FontAwesomeIcon className="icon-secundary" icon={faSquare} />
-                  </button>
-                </div>
                 <p className="small-font">{e.fecha}</p>
                 <p className="small-font">{e.hora}</p>
                 <p className="small-font">{e.nombre}</p>
@@ -264,11 +313,12 @@ export default function Table() {
                     <p className="small-font">{e.estado}</p>
                   </div>
                 </Dropdown>
-                <div>
-                  <button className="btn btn-small">
-                    <FontAwesomeIcon className="icon-secundary" icon={faTrash} />
-                  </button>
-                </div>
+                <button className="btn btn-small" onClick={() => handleEditModalOpening(e)}>
+                  <FontAwesomeIcon className="icon-secundary" icon={faPenToSquare} />
+                </button>
+                <button className="btn btn-small">
+                  <FontAwesomeIcon className="icon-secundary" icon={faTrash} />
+                </button>
               </div>
             );
           })}
@@ -283,10 +333,11 @@ export default function Table() {
 
       {modalShown && (
         <div className="modal-container">
-          <form onSubmit={handleSubmit(addNewAppointment)} className="modal flex-column">
-            <h1 style={{ marginBottom: "1rem" }}>Crear cita</h1>
+          <form onSubmit={handleSubmit(modalType === "Crear" ? addNewAppointment : updateAppointment)} className="modal flex-column">
+            <h1 style={{ marginBottom: "1rem" }}>{modalType} cita</h1>
             <div className="flex" style={{ alignItems: "flex-start" }}>
               <div className="flex-column column-gap">
+                <input type="text" {...register("id")} disabled style={{ display: "none" }} />
                 <input placeholder="Nombre" {...register("nombre", { required: true, maxLength: 50 })} />
                 <input placeholder="Telefono" {...register("telefono", { required: true, maxLength: 50 })} />
                 <select {...register("servicio")} defaultValue="Servicio">
@@ -308,7 +359,7 @@ export default function Table() {
                 <p>Cancelar</p>
               </button>
               <button className="btn" type="submit">
-                <p className="accent-font">Crear</p>
+                <p className="accent-font">{modalType}</p>
               </button>
             </div>
           </form>
